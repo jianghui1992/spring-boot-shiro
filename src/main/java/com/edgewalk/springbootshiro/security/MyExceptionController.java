@@ -48,6 +48,8 @@ public class MyExceptionController implements ErrorController {
                 return "404";
             case 500:
                 return "500";
+
+                //todo bug点, 异常状态码怎么办?直接返回index???
         }
         return "index";
     }

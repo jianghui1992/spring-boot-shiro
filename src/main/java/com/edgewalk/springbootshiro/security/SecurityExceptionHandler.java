@@ -24,4 +24,11 @@ public class SecurityExceptionHandler {
         //TODO 添加切面信息,发生异常的类,方法,参数等信息
         return ApiResponse.error(ApiResponse.Status.NOT_LOGIN);
     }
+
+    @ExceptionHandler(value = Exception.class)
+    public ApiResponse handleException(Exception e){
+        //TODO 添加切面信息,发生异常的类,方法,参数等信息
+        return ApiResponse.error(ApiResponse.Status.INTERNAL_SERVER_ERROR);
+    }
+
 }
