@@ -2,6 +2,7 @@ package com.edgewalk.springbootshiro.security;
 
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.context.annotation.Bean;
@@ -57,20 +58,38 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/logout", "logout");
         // 配置不会被拦截的链接 顺序判断
         //<!-- 过滤链定义，从上向下顺序执行，一般将/**放在最为下边 -->:这是一个坑呢，一不小心代码就不好使了;
-        //authc: 需要认证才能进行访问
-        //user:配置记住我或认证通过可以访问
-        // anon:所有url都都可以匿名访问-->
+
+        /**
+         * anon:可以匿名访问
+         * authc: 需要认证才能进行访问
+         * authcBasic: 基于一个http的弹窗验证(不建议使用不安全,会把用户名密码base64后保存在header中)
+         * user:配置记住我或认证通过可以访问
+         *logout :退出
+         *
+         * perms:资源限制
+         * rest:基于rest的资源限制(对于rest支持比较好)
+         *          /user/** = rest[user]  get /user/1234 将会检查 Subject.isPermitted("user:read")有没有read权限
+         *                                 post  /user 将会检查 Subject.isPermitted("user:create")有没有create权限
+         *                                 PUT --> edit   ,DELETE --> delete
+         * roles:角色限制
+         *   filterChainDefinitionMap.put("/testRole", "roles[\"admin1\"]");
+         * ssl: ssl限制
+         * port: 端口限制
+         */
+
+        filterChainDefinitionMap.put("/index", "authcBasic");
         filterChainDefinitionMap.put("/static/**", "anon");
         filterChainDefinitionMap.put("/ajaxLogin", "anon");
         filterChainDefinitionMap.put("/subLogin", "anon");
+        filterChainDefinitionMap.put("/testRole", "roles[\"admin1\"]");
         filterChainDefinitionMap.put("/**", "authc");
 
         //配置shiro默认登录界面地址，前后端分离中登录界面跳转应由前端路由控制，后台仅返回json数据
         shiroFilterFactoryBean.setLoginUrl("/login.html");
         // 登录成功后要跳转的链接
         //shiroFilterFactoryBean.setSuccessUrl("/index");
-        //未授权界面;
-        //shiroFilterFactoryBean.setUnauthorizedUrl("/403");
+        //未授权界面
+        shiroFilterFactoryBean.setUnauthorizedUrl("/unauthorizedUrl");
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return shiroFilterFactoryBean;
     }
@@ -129,19 +148,27 @@ public class ShiroConfig {
 //        return redisSessionDAO;
 //    }
 //
-//    /**
-//     * 开启shiro aop注解支持.
-//     * 使用代理方式;所以需要开启代码支持;
-//     *
-//     * @param securityManager
-//     * @return
-//     */
-//    @Bean
-//    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {
-//        AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
-//        authorizationAttributeSourceAdvisor.setSecurityManager(securityManager);
-//        return authorizationAttributeSourceAdvisor;
-//    }
+    /**
+     * 开启shiro aop注解支持.
+     * 使用代理方式;所以需要开启代码支持;
+     * 1. 如果不生效,那么考虑是aop没有开启使用注解: //@EnableAspectJAutoProxy尝试开启
+     * 2. 需要添加aop的依赖,可选: spring-boot-starter-aop
+     * 3. 接口方法使用 @RequiresRoles("admin1") @RequiresPermissions("xxx")开启授权限制
+     * @param securityManager
+     * @return
+     */
+    @Bean
+    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {
+        AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
+        authorizationAttributeSourceAdvisor.setSecurityManager(securityManager);
+        return authorizationAttributeSourceAdvisor;
+    }
+
+    //@Bean
+    //public LifecycleBeanPostProcessor lifecycleBeanPostProcessor(){
+        //return new LifecycleBeanPostProcessor();
+    //}
+
 //
 //    /**
 //     * 注册全局异常处理

@@ -3,11 +3,13 @@ package com.edgewalk.springbootshiro.security;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authc.credential.SimpleCredentialsMatcher;
 import org.apache.shiro.crypto.hash.Md5Hash;
 
 /**
- * 默认没有加密器,可以不开启
+ *
+ * 默认没有开启加密器,可以不开启,系统有默认的实现类{@link HashedCredentialsMatcher}
  * 自定义密码加密方法,需要注入到自定义Realm中,会在doGetAuthenticationInfo返回的simpleAuthenticationInfo中自己校验
  */
 public class CustomCredentialsMatcher extends SimpleCredentialsMatcher {
