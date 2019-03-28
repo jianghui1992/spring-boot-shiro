@@ -1,4 +1,4 @@
-package com.edgewalk.springbootshiro.security;
+package com.edgewalk.springbootshiro.security.realm;
 
 import com.google.common.collect.Sets;
 import org.apache.shiro.authc.AuthenticationException;
@@ -69,7 +69,7 @@ public class CustomRealm extends AuthorizingRealm {
          */
         // 当用户调用subject.login(token)时,
         // SecurityManager会获取到SimpleAuthenticationInfo中的password然后和token中的password对比,如果通过就登录成功
-        SimpleAuthenticationInfo simpleAuthenticationInfo = new SimpleAuthenticationInfo("test", password, "customerRealm");
+        SimpleAuthenticationInfo simpleAuthenticationInfo = new SimpleAuthenticationInfo(username, password, "customerRealm");
         //如果登陆成功,后期可以通过SecurityUtils.getSubject().getPrincipal()获取到我们在SimpleAuthenticationInfo放入的第一个参数
         return simpleAuthenticationInfo;
     }

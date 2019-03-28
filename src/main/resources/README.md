@@ -14,3 +14,16 @@ bugs点:
     //未授权界面
     shiroFilterFactoryBean.setUnauthorizedUrl("/unauthorizedUrl");
    负责接收不到异常,后台也不报错
+   
+   
+## shiro除了使用预定于的filter,还可以自定义filter
+
+## httpbasic认证的示例
+https://blog.csdn.net/kkdelta/article/details/28419625
+
+## shiro会话管理
+
+### sessionManager SessionDao
+
+### session on redis
+

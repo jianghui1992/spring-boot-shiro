@@ -1,12 +1,22 @@
 package com.edgewalk.springbootshiro.security;
 
+import com.edgewalk.springbootshiro.security.filter.MyRoleFilter;
+import com.edgewalk.springbootshiro.security.realm.CustomRealm;
+import com.edgewalk.springbootshiro.security.session.CustomSessionManager;
+import com.edgewalk.springbootshiro.security.session.RedisSessionDao;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.session.mgt.SessionManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,8 +25,8 @@ import java.util.Map;
 public class ShiroConfig {
 
     /**
+     * 密码加密器,我们也可以使用我们自己的{@link CustomCredentialsMatcher}
      *
-     *密码加密器,我们也可以使用我们自己的{@link CustomCredentialsMatcher}
      * @return
      */
     @Bean
@@ -34,12 +44,13 @@ public class ShiroConfig {
         myShiroRealm.setCredentialsMatcher(new CustomCredentialsMatcher());
         return myShiroRealm;
     }
+
     @Bean
     public SecurityManager securityManager() {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         securityManager.setRealm(myShiroRealm());
         // 自定义session管理 使用redis
-        //securityManager.setSessionManager(sessionManager());
+        securityManager.setSessionManager(sessionManager());
         // 自定义缓存实现 使用redis
         //securityManager.setCacheManager(cacheManager());
         return securityManager;
@@ -51,7 +62,7 @@ public class ShiroConfig {
         System.out.println("ShiroConfiguration.shirFilter()");
         ShiroFilterFactoryBean shiroFilterFactoryBean = new ShiroFilterFactoryBean();
         shiroFilterFactoryBean.setSecurityManager(securityManager);
- 
+
         Map<String, String> filterChainDefinitionMap = new LinkedHashMap<String, String>();
         //shiro默认按照顺序从上到下的匹配,匹配到就返回
         //配置退出 过滤器,其中的具体的退出代码Shiro已经替我们实现了，登出后跳转配置的loginUrl
@@ -77,33 +88,58 @@ public class ShiroConfig {
          * port: 端口限制
          */
 
-        filterChainDefinitionMap.put("/index", "authcBasic");
+//        filterChainDefinitionMap.put("/index", "authcBasic");
         filterChainDefinitionMap.put("/static/**", "anon");
         filterChainDefinitionMap.put("/ajaxLogin", "anon");
         filterChainDefinitionMap.put("/subLogin", "anon");
-        filterChainDefinitionMap.put("/testRole", "roles[\"admin1\"]");
+        filterChainDefinitionMap.put("/testRole", "myRole[\"admin1\"]");
         filterChainDefinitionMap.put("/**", "authc");
 
+        shiroFilterFactoryBean.getFilters().put("myRole", myRoleFilter());
         //配置shiro默认登录界面地址，前后端分离中登录界面跳转应由前端路由控制，后台仅返回json数据
         shiroFilterFactoryBean.setLoginUrl("/login.html");
         // 登录成功后要跳转的链接
         //shiroFilterFactoryBean.setSuccessUrl("/index");
         //未授权界面
         //shiroFilterFactoryBean.setUnauthorizedUrl("/unauthorizedUrl");
+
+
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return shiroFilterFactoryBean;
     }
 
+    @Bean
+    public MyRoleFilter myRoleFilter() {
+        return new MyRoleFilter();
+    }
 
 
- 
-//    //自定义sessionManager
-//    @Bean
-//    public SessionManager sessionManager() {
-//        MySessionManager mySessionManager = new MySessionManager();
-//        mySessionManager.setSessionDAO(redisSessionDAO());
-//        return mySessionManager;
-//    }
+    /**
+     * RedisSessionDAO shiro sessionDao层的实现 通过redis
+     * <p>
+     */
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RedisTemplate<String, Session> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Session> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        return redisTemplate;
+    }
+
+    @Bean
+    public RedisSessionDao redisSessionDao() {
+        return new RedisSessionDao();
+    }
+
+    //默认sessionManager
+    @Bean
+    public SessionManager sessionManager() {
+        CustomSessionManager sessionManager = new CustomSessionManager();
+        sessionManager.setSessionDAO(redisSessionDao());
+        return sessionManager;
+    }
 //
 //    /**
 //     * 配置shiro redisManager
@@ -125,8 +161,6 @@ public class ShiroConfig {
 //    /**
 //     * cacheManager 缓存 redis实现
 //     * <p>
-//     * 使用的是shiro-redis开源插件
-//     *
 //     * @return
 //     */
 //    @Bean
@@ -136,24 +170,16 @@ public class ShiroConfig {
 //        return redisCacheManager;
 //    }
 //
-//    /**
-//     * RedisSessionDAO shiro sessionDao层的实现 通过redis
-//     * <p>
-//     * 使用的是shiro-redis开源插件
-//     */
-//    @Bean
-//    public RedisSessionDAO redisSessionDAO() {
-//        RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
-//        redisSessionDAO.setRedisManager(redisManager());
-//        return redisSessionDAO;
-//    }
+
 //
+
     /**
      * 开启shiro aop注解支持.
      * 使用代理方式;所以需要开启代码支持;
      * 1. 如果不生效,那么考虑是aop没有开启使用注解: //@EnableAspectJAutoProxy尝试开启
      * 2. 需要添加aop的依赖,可选: spring-boot-starter-aop
      * 3. 接口方法使用 @RequiresRoles("admin1") @RequiresPermissions("xxx")开启授权限制
+     *
      * @param securityManager
      * @return
      */
@@ -166,7 +192,7 @@ public class ShiroConfig {
 
     //@Bean
     //public LifecycleBeanPostProcessor lifecycleBeanPostProcessor(){
-        //return new LifecycleBeanPostProcessor();
+    //return new LifecycleBeanPostProcessor();
     //}
 
 //

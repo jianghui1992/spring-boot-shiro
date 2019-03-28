@@ -1,7 +1,7 @@
 package com.edgewalk.springbootshiro;
 
 import com.edgewalk.springbootshiro.security.CustomCredentialsMatcher;
-import com.edgewalk.springbootshiro.security.CustomRealm;
+import com.edgewalk.springbootshiro.security.realm.CustomRealm;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.mgt.DefaultSecurityManager;

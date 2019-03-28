@@ -1,5 +1,6 @@
-package com.edgewalk.springbootshiro.security;
+package com.edgewalk.springbootshiro.security.exception;
 
+import com.edgewalk.springbootshiro.security.ApiResponse;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -36,23 +36,16 @@ public class MyExceptionController implements ErrorController {
     }
 
     /**
-     * Web页面错误处理
+     * Web页面错误处理,统一返回json
      */
-    @RequestMapping(value = ERROR_PATH, produces = "text/html")
-    public String errorPageHandler(HttpServletRequest request, HttpServletResponse response) {
-        int status = response.getStatus();
-        switch (status) {
-            case 403:
-                return "403";
-            case 404:
-                return "404";
-            case 500:
-                return "500";
-
-                //todo bug点, 异常状态码怎么办?直接返回index???
-        }
-        return "index";
-    }
+   /* @RequestMapping(value = ERROR_PATH, produces = "text/html")
+    @ResponseBody
+    public ApiResponse errorPageHandler(HttpServletRequest request, HttpServletResponse response) {
+        WebRequest requestAttributes = new ServletWebRequest(request);
+        Map<String, Object> attr = this.errorAttributes.getErrorAttributes(requestAttributes, false);
+        int status = getStatus(request);
+        return ApiResponse.error(status, String.valueOf(attr.getOrDefault("message", "error")));
+    }*/
 
     /**
      * 除Web页面外的错误处理，比如Json/XML等
@@ -63,7 +56,6 @@ public class MyExceptionController implements ErrorController {
         WebRequest requestAttributes = new ServletWebRequest(request);
         Map<String, Object> attr = this.errorAttributes.getErrorAttributes(requestAttributes, false);
         int status = getStatus(request);
-
         return ApiResponse.error(status, String.valueOf(attr.getOrDefault("message", "error")));
     }
 
@@ -72,7 +64,6 @@ public class MyExceptionController implements ErrorController {
         if (status != null) {
             return status;
         }
-
         return 500;
     }
 

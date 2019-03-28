@@ -21,7 +21,7 @@ public class IndexController {
     @GetMapping("/index")
     @ResponseBody
     public String index() {
-        return "hello";
+        return "hello:" + SecurityUtils.getSubject().getPrincipal().toString();
     }
 
     @GetMapping("/login")
@@ -37,10 +37,10 @@ public class IndexController {
         try {
             subject.login(token);
         } catch (Exception e) {
-            log.info("用户登录异常:{}",e);
+            log.info("用户登录异常:{}", e);
             return ApiResponse.error(ApiResponse.Status.NOT_LOGIN);
         }
-        return ApiResponse.success("登录成功");
+        return ApiResponse.success(subject.getSession().getId().toString());
     }
 
     //@RequiresRoles("admin")
@@ -49,6 +49,7 @@ public class IndexController {
     public String testRole() {
         return "testRole success!";
     }
+
     //@RequiresRoles("admin1")
     @GetMapping("/testRole1")
     @ResponseBody
