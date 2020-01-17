@@ -29,19 +29,7 @@ public class IndexController {
         return "login.html";
     }
 
-    @PostMapping(value = "subLogin")
-    @ResponseBody
-    public ApiResponse subLogin(User user) {
-        Subject subject = SecurityUtils.getSubject();
-        UsernamePasswordToken token = new UsernamePasswordToken(user.getUsername(), user.getPassword());
-        try {
-            subject.login(token);
-        } catch (Exception e) {
-            log.info("用户登录异常:{}", e);
-            return ApiResponse.error(ApiResponse.Status.NOT_LOGIN);
-        }
-        return ApiResponse.success(subject.getSession().getId().toString());
-    }
+
 
     //@RequiresRoles("admin")
     @GetMapping("/testRole")
